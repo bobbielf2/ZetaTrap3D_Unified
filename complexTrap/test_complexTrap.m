@@ -1,10 +1,10 @@
-op = 2; % 1=combined field, D+i*k*S; 2=DLP; 3=SLP
+op = 2; % option 1=combined field, D+i*k*S; 2=DLP; 3=SLP
 
-% complex path
-n = 80;
-L = 30;
-a = 1/2; b = 3/4; L0 = 10;
-s = patch_cmpl(L,n,a,b,L0);
+% complexified patch
+n = 40; % num of pts on along each direction
+L = 30; % patch size = 2L x 2L
+a = 1/2; b = 3/4; L0 = 10;  % params for complexification
+s = patch_cmpl(L,n,a,b,L0); % create the patch
 subplot(1,2,1)
 plot_surf(s)
 
@@ -23,16 +23,16 @@ end
 if 1 % simple test: ord = 3
     [Zs,Zd] = epstein_zeta_cmpl(1,s.E,s.F,s.G,s.e,s.f,s.g);
     % [Zs,Zd] = epstein_zeta_cmpl(1,real(s.E),real(s.F),real(s.G),real(s.e),real(s.f),real(s.g));
-    Ds = s.w/(4*pi).*(-Zs/s.h + 1i*ka);
-    Dd = Zd.*s.w/(4*pi*s.h);
+    Ds = spdiags(s.w(:)/(4*pi).*(-Zs(:)/s.h + 1i*ka),[0],(n+1)^2,(n+1)^2);
+    Dd = spdiags(Zd(:).*s.w(:)/(4*pi*s.h),[0],(n+1)^2,(n+1)^2);
     if op == 1
-        A(diagind(A)) = A(diagind(A)) + (Dd + 1i*ka*Ds).';
+        A = A + (Dd + 1i*ka*Ds);
     elseif op == 2
-        A(diagind(A)) = A(diagind(A)) + Dd.';
+        A = A + Dd;
     elseif op == 3
-        A(diagind(A)) = A(diagind(A)) + Ds.';
+        A = A + Ds;
     end
-else
+else % general order of accuracy STILL BUGGY
     ord = 3;
     lptypes = {'s','d'};
     ZZ = Helm3dPatchZetaSparse_multi_cmpl(ka,ord,lptypes,s);
@@ -47,7 +47,7 @@ else
     end
 end
 
-%% boundary condition
+% boundary condition
 p.x = [5;5;-10];
 p.w = 1;
 rhs = Helm3dSLP_cmpl(ka,s,p);
