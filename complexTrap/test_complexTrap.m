@@ -18,33 +18,26 @@ elseif op == 3
     A = Helm3dSLP_cmpl(ka,s,s);
 end
 
-% zeta weights
-
-if 1 % simple test: ord = 3
-    [Zs,Zd] = epstein_zeta_cmpl(1,s.E,s.F,s.G,s.e,s.f,s.g);
-    % [Zs,Zd] = epstein_zeta_cmpl(1,real(s.E),real(s.F),real(s.G),real(s.e),real(s.f),real(s.g));
-    Ds = spdiags(s.w(:)/(4*pi).*(-Zs(:)/s.h + 1i*ka),[0],(n+1)^2,(n+1)^2);
-    Dd = spdiags(Zd(:).*s.w(:)/(4*pi*s.h),[0],(n+1)^2,(n+1)^2);
-    if op == 1
-        A = A + (Dd + 1i*ka*Ds);
-    elseif op == 2
-        A = A + Dd;
-    elseif op == 3
-        A = A + Ds;
-    end
-else % general order of accuracy STILL BUGGY
-    ord = 3;
+% compute zeta weights
+if 1 % general order of accuracy, MAY STILL BE BUGGY
+    ord = 5;
     lptypes = {'s','d'};
     ZZ = Helm3dPatchZetaSparse_multi_cmpl(ka,ord,lptypes,s);
     Ds = ZZ{1};
     Dd = ZZ{2};
-    if op == 1
-        A = A + (Dd + 1i*ka*Ds);
-    elseif op == 2
-        A = A + Dd;
-    elseif op == 3
-        A = A + Ds;
-    end
+else % simple test: ord = 3
+    [Zs,Zd] = epstein_zeta_cmpl(1,s.E,s.F,s.G,s.e,s.f,s.g);
+    % [Zs,Zd] = epstein_zeta_cmpl(1,real(s.E),real(s.F),real(s.G),real(s.e),real(s.f),real(s.g));
+    Ds = spdiags(s.w(:)/(4*pi).*(-Zs(:)/s.h + 1i*ka),[0],(n+1)^2,(n+1)^2);
+    Dd = spdiags(Zd(:).*s.w(:)/(4*pi*s.h),[0],(n+1)^2,(n+1)^2);
+end
+% sparse correction
+if op == 1
+    A = A + (Dd + 1i*ka*Ds);
+elseif op == 2
+    A = A + Dd;
+elseif op == 3
+    A = A + Ds;
 end
 
 % boundary condition
@@ -56,15 +49,18 @@ rhs = Helm3dSLP_cmpl(ka,s,p);
 tau = A\rhs;
 subplot(2,2,2)
 surf(s.u,s.v,reshape(real(tau),s.Nu,s.Nv))
+title('density (real part)')
 subplot(2,2,4)
 %surf(s.u,s.v,reshape(imag(tau),s.Nu,s.Nv))
 surf(s.u,s.v,reshape(log10(abs(tau)),s.Nu,s.Nv))
+title('log10 |density|')
 
 
 % verify
 t.x = [-5;-5;10];
 subplot(1,2,1), hold on, plot3(p.x(1),p.x(2),p.x(3),'*'),
 plot3(t.x(1),t.x(2),t.x(3),'*'), hold off, %axis equal
+title('surface (real part)')
 
 u_exact = Helm3dSLP_cmpl(ka,t,p);
 if op == 1
@@ -83,11 +79,4 @@ x = reshape(real(s.x(1,:)),Nr);
 y = reshape(real(s.x(2,:)),Nr);
 z = reshape(real(s.x(3,:)),Nr);
 surf(x,y,z)
-end
-
-function i = diagind(A)
-% DIAGIND  Return indices of diagonal of square matrix
-%
-% Example usage:   A = randn(3,3); A(diagind(A)) = 0;
-N = size(A,1); i = sub2ind([N,N], 1:N, 1:N); i = i(:);
 end
