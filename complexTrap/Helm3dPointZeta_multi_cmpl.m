@@ -133,7 +133,7 @@ end
 % compute geometric zeta weights
 for i = 1:np
     if isempty(zweis{i})
-        zweis{i}=zeta_wei(ord,stens{i},ps{i},qs{i},cs{i},r2mQh2s{i},P.h,pre);
+        zweis{i}=zeta_wei_cmpl(ord,stens{i},ps{i},qs{i},cs{i},r2mQh2s{i},P.h,pre);
         % diagonal limit of the smooth component for SLP and DLPn
         if strcmp(lptypes{i},'s')
             zweis{i}(1,:) = zweis{i}(1,:) + 1i*ka/4/pi*P.h^2 * P.sp(inds);

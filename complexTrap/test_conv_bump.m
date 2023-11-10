@@ -1,6 +1,6 @@
-ka = 2;
+ka = 2; % wavenumber
+use_unified = 1; % use the "unified" quadrature for higher-order correction
 
-%N = 32*round(2.^(1.5:0.5:6)/2);
 N = 32*round(2.^(2:0.5:6)/2);
 Us = zeros(size(N));
 Ud = zeros(size(N));
@@ -20,31 +20,52 @@ for ii = 1:numel(N)
     t.x = s.x(:,ind);
 
     % precompute correction weight (1-point)
-    [Zs,Zd] = epstein_zeta_cmpl(1,s.E(ind),s.F(ind),s.G(ind),s.e(ind),s.f(ind),s.g(ind));
-    Ds = s.w(ind)/(4*pi).*(-Zs/s.h + 1i*ka);
-    Dd = Zd.*s.w(ind)/(4*pi*s.h);
+    if ~use_unified
+        ord = 3;
+        [Zs,Zd] = epstein_zeta_cmpl(1,s.E(ind),s.F(ind),s.G(ind),s.e(ind),s.f(ind),s.g(ind));
+        Ds = s.w(ind)/(4*pi).*(-Zs/s.h + 1i*ka);
+        Dd = Zd.*s.w(ind)/(4*pi*s.h);
+    else
+        ord = 5;
+        lptypes = {'s','d'};
+        [zweis, indstens, stens] = Helm3dPointZeta_multi_cmpl(ka,ord,lptypes,s,ind);
+        ind_s = indstens{1};
+        Ds = zweis{1};
+        ind_d = indstens{2};
+        Dd = zweis{2};
+    end
 
     % evaluate potential
-    sig = (sin(0.6*s.u+2) - 3*cos(0.7*s.v-pi)).*exp(-0.05*(s.u.^2+s.v.^2)); % density
-    A = Helm3dSLP_cmpl(ka,t,s); A(ind) = Ds; % slp
-    u = A*sig(:);
-    Us(ii) = u;
-    A = Helm3dDLP_cmpl(ka,t,s); A(ind) = Dd; % dlp
-    u = A*sig(:);
-    Ud(ii) = u;
+    %sig = (sin(0.6*s.u+2) - 3*cos(0.7*s.v-pi)).*exp(-0.05*(s.u.^2+s.v.^2)); % real density
+    sig = (sin(0.6*s.u+2) - 3*cos(0.7*s.v-pi))+1i*exp(sin(s.u+1)-cos(0.2*s.v)); % complex density
+    As = Helm3dSLP_cmpl(ka,t,s); % slp
+    Ad = Helm3dDLP_cmpl(ka,t,s); % dlp
+    if ~use_unified
+        As(ind) = Ds;
+        Ad(ind) = Dd;
+    else
+        As(ind) = 0;
+        As(ind_s) = As(ind_s)+Ds.';
+        Ad(ind) = 0;
+        Ad(ind_d) = Ad(ind_d)+Dd.';
+    end
+    Us(ii) = As*sig(:);
+    Ud(ii) = Ad*sig(:);
     hh(ii) = s.h; % mesh size
 
-    if n < 70
+    if 0&&n < 70
         clf
         % plot surface
         subplot(1,3,1)
         plot3(real(t.x(1)),real(t.x(2)),t.x(3),'.r','markersize',30)
         hold on, plot_surf(s), hold off
+        % plot stencil
+        %xsten = real(s.x(:,ind_d)); hold on, plot3(xsten(1,:),xsten(2,:),xsten(3,:),'.b','markersize',10), hold off
         legend('= target'), title('surface (real part)')
         % plot density
         subplot(1,3,2)
-        plot_surf(struct('x',[s.u(:),s.v(:),sig(:)]','Nu',n+1,'Nv',n+1))
-        title('density')
+        plot_surf(struct('x',[s.u(:),s.v(:),real(sig(:))]','Nu',n+1,'Nv',n+1))
+        title('density (real part)')
     end
 end
 % convergence plot
@@ -54,8 +75,8 @@ subplot(1,3,3)
 % err vs N
 %loglog(N,err_s,'*',N,err_d,'o',N,1*N.^-3,'--','LineWidth',1), xlabel('$n$','Interpreter','latex')
 % err vs h
-loglog(hh,err_s,'*',hh,err_d,'o',hh,1e-5*hh.^3,'--','LineWidth',1), xlabel('$h$','Interpreter','latex') % ylim([8e-11,1e-2])
-legend('SLP','DLP','$O(h^3)$','interpreter','latex','Location','northwest')
+loglog(hh,err_s,'*',hh,err_d,'o',hh,1e-3*hh.^ord,'--','LineWidth',1,'Color','b'), xlabel('$h$','Interpreter','latex') % ylim([8e-11,1e-2])
+legend({'SLP','DLP',['$O(h^',num2str(ord),')$']},'interpreter','latex','Location','northwest')
 title('error')
 %% annotations
 annotation(gcf,'textbox',...
