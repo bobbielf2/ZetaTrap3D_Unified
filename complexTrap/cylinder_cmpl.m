@@ -9,7 +9,8 @@ u = (0:(ncirc-1))*2*pi/ncirc;
 s.h = u(2)-u(1);
 nv = round(L/pi*ncirc);
 v = (0:nv)*s.h-L;
-s.Nu = numel(u); s.Nv = numel(v);
+Nu = numel(u); Nv = numel(v);
+s.Nu = Nu; s.Nv = Nv;
 [U,V] = ndgrid(u,v); 
 s.u = U; s.v = V; U = U(:).'; V = V(:).';
 [Vc,Vcp,Vcpp] = mypath(V,a,b,L0);
@@ -39,10 +40,12 @@ s.G = sum(s.xv.*s.xv);
 s.e = sum(s.xuu.*s.nx); % second fundamental form e,f,g
 s.f = sum(s.xuv.*s.nx);
 s.g = sum(s.xvv.*s.nx);
-
 % E = real(E); F = real(F); G = real(G);
 % L = real(L); M = real(M); N = real(N);
-
+s.X = {reshape(s.x(1,:),[Nu,Nv]),reshape(s.x(2,:),[Nu,Nv]),reshape(s.x(3,:),[Nu,Nv])};
+s.NX = {reshape(s.nx(1,:),[Nu,Nv]),reshape(s.nx(2,:),[Nu,Nv]),reshape(s.nx(3,:),[Nu,Nv])};
+s.J = reshape(s.sp,[Nu,Nv]);
+s.type='periodic'; s.L = 0;
 
 % generate imaginary part of the complex integration path
 function [z,zp,zpp] = mypath(x,a,b,L0)

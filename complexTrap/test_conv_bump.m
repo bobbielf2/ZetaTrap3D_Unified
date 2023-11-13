@@ -20,12 +20,7 @@ for ii = 1:numel(N)
     t.x = s.x(:,ind);
 
     % precompute correction weight (1-point)
-    if ~use_unified
-        ord = 3;
-        [Zs,Zd] = epstein_zeta_cmpl(1,s.E(ind),s.F(ind),s.G(ind),s.e(ind),s.f(ind),s.g(ind));
-        Ds = s.w(ind)/(4*pi).*(-Zs/s.h + 1i*ka);
-        Dd = Zd.*s.w(ind)/(4*pi*s.h);
-    else
+    if use_unified
         ord = 5;
         lptypes = {'s','d'};
         [zweis, indstens, stens] = Helm3dPointZeta_multi_cmpl(ka,ord,lptypes,s,ind);
@@ -33,6 +28,11 @@ for ii = 1:numel(N)
         Ds = zweis{1};
         ind_d = indstens{2};
         Dd = zweis{2};
+    else
+        ord = 3;
+        [Zs,Zd] = epstein_zeta_cmpl(1,s.E(ind),s.F(ind),s.G(ind),s.e(ind),s.f(ind),s.g(ind));
+        Ds = s.w(ind)/(4*pi).*(-Zs/s.h + 1i*ka);
+        Dd = Zd.*s.w(ind)/(4*pi*s.h);
     end
 
     % evaluate potential
@@ -40,14 +40,14 @@ for ii = 1:numel(N)
     sig = (sin(0.6*s.u+2) - 3*cos(0.7*s.v-pi))+1i*exp(sin(s.u+1)-cos(0.2*s.v)); % complex density
     As = Helm3dSLP_cmpl(ka,t,s); % slp
     Ad = Helm3dDLP_cmpl(ka,t,s); % dlp
-    if ~use_unified
-        As(ind) = Ds;
-        Ad(ind) = Dd;
-    else
+    if use_unified
         As(ind) = 0;
         As(ind_s) = As(ind_s)+Ds.';
         Ad(ind) = 0;
         Ad(ind_d) = Ad(ind_d)+Dd.';
+    else
+        As(ind) = Ds;
+        Ad(ind) = Dd;
     end
     Us(ii) = As*sig(:);
     Ud(ii) = Ad*sig(:);

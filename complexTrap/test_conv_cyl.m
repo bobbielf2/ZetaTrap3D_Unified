@@ -1,4 +1,5 @@
 ka = 2; % wavenumber
+use_unified = 1; % use the "unified" quadrature for higher-order correction
 
 % cylinder parameters
 cylax = [0.5,0.5,1];    % cylinder axis
@@ -21,18 +22,36 @@ for ii = 1:numel(N)
     t.x = s.x(:,ind);
 
     % precompute correction weight (1-point)
-    [Zs,Zd] = epstein_zeta_cmpl(1,s.E(ind),s.F(ind),s.G(ind),s.e(ind),s.f(ind),s.g(ind));
-    Ds = s.w(ind)/(4*pi).*(-Zs/s.h + 1i*ka);
-    Dd = Zd.*s.w(ind)/(4*pi*s.h);
+    if use_unified
+        ord = 3;
+        lptypes = {'s','d'};
+        [zweis, indstens, stens] = Helm3dPointZeta_multi_cmpl(ka,ord,lptypes,s,ind);
+        ind_s = indstens{1};
+        Ds = zweis{1};
+        ind_d = indstens{2};
+        Dd = zweis{2};
+    else
+        ord = 3;
+        [Zs,Zd] = epstein_zeta_cmpl(1,s.E(ind),s.F(ind),s.G(ind),s.e(ind),s.f(ind),s.g(ind));
+        Ds = s.w(ind)/(4*pi).*(-Zs/s.h + 1i*ka);
+        Dd = Zd.*s.w(ind)/(4*pi*s.h);
+    end
 
     % evaluate potential
-    sig = (sin(s.u+2) - 3*cos(0.7*s.v-pi)+1i*cos(2*s.u)*0.3.*s.v).*exp(-0.05*s.v.^2); % density
-    A = Helm3dSLP_cmpl(ka,t,s); A(ind) = Ds; % slp
-    u = A*sig(:);
-    Us(ii) = u;
-    A = Helm3dDLP_cmpl(ka,t,s); A(ind) = Dd; % dlp
-    u = A*sig(:);
-    Ud(ii) = u;
+    sig = (sin(s.u+2) - 3*cos(0.7*s.v-pi)+1i*cos(2*s.u)*0.3.*s.v);%.*exp(-0.05*s.v.^2); % density
+    As = Helm3dSLP_cmpl(ka,t,s); % slp
+    Ad = Helm3dDLP_cmpl(ka,t,s); % dlp
+    if use_unified
+        As(ind) = 0;
+        As(ind_s) = As(ind_s)+Ds.';
+        Ad(ind) = 0;
+        Ad(ind_d) = Ad(ind_d)+Dd.';
+    else
+        As(ind) = Ds;
+        Ad(ind) = Dd;
+    end
+    Us(ii) = As*sig(:);
+    Ud(ii) = Ad*sig(:);
     hh(ii) = s.h; % mesh size
 
     % plot
@@ -57,7 +76,7 @@ subplot(1,3,3)
 % err vs N
 %loglog(N,err_s,'*',N,err_d,'o',N,1*N.^-3,'--','LineWidth',1), xlabel('$n$','Interpreter','latex')
 % err vs h
-loglog(hh,err_s,'*',hh,err_d,'o',hh,1e-3*hh.^3,'--','LineWidth',1), xlabel('$h$','Interpreter','latex') % ylim([8e-11,1e-2])
+loglog(hh,err_s,'*',hh,err_d,'o',hh,1e-1*hh.^ord,'--','LineWidth',1), xlabel('$h$','Interpreter','latex') % ylim([8e-11,1e-2])
 legend('SLP','DLP','$O(h^3)$','interpreter','latex','Location','northwest')
 title('error')
 %% annotations
