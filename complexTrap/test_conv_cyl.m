@@ -1,13 +1,15 @@
 ka = 2; % wavenumber
 use_unified = 1; % use the "unified" quadrature for higher-order correction
+        ord = 5; % convergence order = 3, 5, 7 (unified quad only)
 
 % cylinder parameters
 cylax = [0.5,0.5,1];    % cylinder axis
-r = 2.5;                  % cylinder radius
-%n = 20;                 % #pts on circle
+r = 2.5;                % cylinder radius
+%n = 20;                % #pts on circle
 L = 30; a = 1/2; b = 3/4; L0 = 10;      % complexification parameters
 
-N = 10*round(2.^(1.5:0.5:6)/2);
+% convergence
+N = 10*round(2.^(2:0.5:6)/2);
 Us = zeros(size(N));
 Ud = zeros(size(N));
 hh = zeros(size(N));
@@ -21,9 +23,8 @@ for ii = 1:numel(N)
     ind = sub2ind([s.Nu,s.Nv],i,j);
     t.x = s.x(:,ind);
 
-    % precompute correction weight (1-point)
+    % precompute correction weight
     if use_unified
-        ord = 3;
         lptypes = {'s','d'};
         [zweis, indstens, stens] = Helm3dPointZeta_multi_cmpl(ka,ord,lptypes,s,ind);
         ind_s = indstens{1};
@@ -38,7 +39,7 @@ for ii = 1:numel(N)
     end
 
     % evaluate potential
-    sig = (sin(s.u+2) - 3*cos(0.7*s.v-pi)+1i*cos(2*s.u)*0.3.*s.v);%.*exp(-0.05*s.v.^2); % density
+    sig = (sin(3*s.u+2) - 3*cos(0.7*s.v-pi)+1i*cos(2*s.u)*0.3.*s.v);% complex density
     As = Helm3dSLP_cmpl(ka,t,s); % slp
     Ad = Helm3dDLP_cmpl(ka,t,s); % dlp
     if use_unified
@@ -55,45 +56,35 @@ for ii = 1:numel(N)
     hh(ii) = s.h; % mesh size
 
     % plot
-    if n < 31
+    if n < 40
         clf
-        subplot(1,3,1)
+        % plot surface
+        subplot(1,4,1)
         x = real(t.x);
-        plot3(x(1,:),x(2,:),x(3,:),'.r','markersize',20), hold on
-        plot_surf(s,1), hold off
+        plot3(x(1,:),x(2,:),x(3,:),'.r','markersize',20)
+        hold on, plot_surf(s,1), hold off
         axis([-10,5,-10,5,-15,5])
         legend('= target'), title('surface (real part)')
         
         % plot density
-        subplot(1,3,2)
+        subplot(1,4,2)
         plot_surf(struct('x',[s.u(:),s.v(:),sig(:)]','Nu',s.Nu,'Nv',s.Nv))
         title('density (real part)')
     end
 end
+% convergence plot 
 err_s = abs(Us-Us(end));
 err_d = abs(Ud-Ud(end));
-subplot(1,3,3)
-% err vs N
-%loglog(N,err_s,'*',N,err_d,'o',N,1*N.^-3,'--','LineWidth',1), xlabel('$n$','Interpreter','latex')
 % err vs h
-loglog(hh,err_s,'*',hh,err_d,'o',hh,1e-1*hh.^ord,'--','LineWidth',1), xlabel('$h$','Interpreter','latex') % ylim([8e-11,1e-2])
-legend('SLP','DLP','$O(h^3)$','interpreter','latex','Location','northwest')
-title('error')
-%% annotations
-annotation(gcf,'textbox',...
-    [0.42 0 0.21 0.11],...
-    'String','($\sigma = 0.0582-0.0192i$ at target)',...
-    'LineStyle','none',...
-    'Interpreter','latex',...
-    'FontSize',14,...
-    'FitBoxToText','off');
-annotation(gcf,'textbox',...
-    [0 0.0036871669307216 0.37 0.110687022900762],...
-    'String','target $x=[-6.34- 0.035i, -5.788-0.035i, -8.637-0.0703i]$',...
-    'LineStyle','none',...
-    'Interpreter','latex',...
-    'FontSize',14,...
-    'FitBoxToText','off');
+subplot(1,4,3) % SLP
+loglog(hh,err_s,'o',hh,hh.^ord,'--'), xlabel('h')
+legend({'SLP',['$O(h^',num2str(ord),')$']},'interpreter','latex')
+title('SLP')
+subplot(1,4,4) % DLP
+loglog(hh,err_d,'o',hh,hh.^ord,'--'), xlabel('h')
+legend({'DLP',['$O(h^',num2str(ord),')$']},'interpreter','latex')
+title('DLP')
+
 
 function plot_surf(s,wrap)
 if nargin < 2, wrap = 0; end

@@ -83,7 +83,7 @@ elseif ord <= 3  % O(h^3) correction. DLPn need bigger stencil, others need 1-pt
     end
 elseif ord <= 5 % O(h^5) correction. Need 4th zeta deriv. (DLPn need higher, not implemented!)
     if any(strcmp(lptypes,'dn'))
-        [Zs,Zsd1,Zsd2,Zsd3,Zsd4,Zsd5,Zsd6,Zsd7]=epstein_zeta_d7(-1,E,F,G);
+        [Zs,Zsd1,Zsd2,Zsd3,Zsd4,Zsd5,Zsd6,Zsd7]=epstein_zeta_d7_cmpl(-1,E,F,G);
         [Zs2,Zs2d1,Zs2d2,Zs2d3,Zs2d4,Zs4,Zs4d1]=epstein_zeta_d4_s2d1_cmpl(1,E,F,G);
         pre.s = [-1;1;3];
         pre.zeta={  Zs,  Zsd1, Zsd2, Zsd3, Zsd4,Zsd5,Zsd6,Zsd7;
@@ -106,14 +106,15 @@ elseif ord <= 7 % O(h^7) correction. Need 7th zeta deriv
                     Zs4, Zs4d1,Zs4d2,Zs4d3,Zs4d4,[],[],[],[],[],[];
                     Zs6,Zs6d1,[],[],[],[],[],[], [],[],[]};
     else
-        [Zs,Zsd1,Zsd2,Zsd3,Zsd4,Zsd5,Zsd6,Zsd7]=epstein_zeta_d7(-3,E,F,G);
-        [Zs2,Zs2d1,Zs2d2,Zs2d3,Zs2d4,Zs4,Zs4d1]=epstein_zeta_d4_s2d1(-1,E,F,G);
+        [Zs,Zsd1,Zsd2,Zsd3,Zsd4,Zsd5,Zsd6,Zsd7]=epstein_zeta_d7_cmpl(-3,E,F,G);
+        [Zs2,Zs2d1,Zs2d2,Zs2d3,Zs2d4,Zs4,Zs4d1]=epstein_zeta_d4_s2d1_cmpl(-1,E,F,G);
         pre.s = [-3;-1;1];
         pre.zeta={  Zs,  Zsd1, Zsd2, Zsd3, Zsd4,Zsd5,Zsd6,Zsd7;
                    Zs2, Zs2d1,Zs2d2,Zs2d3,Zs2d4,[], [], [];
                    Zs4, Zs4d1,[],[],[],[],[],[]};
     end
 elseif ord <= 9
+    error('9th order not implemented')
     if any(strcmp(lptypes,'dn'))
         error('DLPn: correction order >= %d not yet implemented!',ord)
     else
