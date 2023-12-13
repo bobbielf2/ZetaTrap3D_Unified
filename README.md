@@ -2,7 +2,7 @@
 
 This is the MATLAB code accompanying the manuscript: 
 
-* B. Wu and P.G. Martinsson, A Unified Trapezoidal Quadrature Method for Singular and Hypersingular Boundary Integral Operators on Curved Surfaces (2022, in preparation)
+* B. Wu and P.G. Martinsson, "A unified trapezoidal quadrature method for singular and hypersingular boundary integral operators on curved surfaces." *SINUM* 61.5 (2023): 2182-2208
 
 This code provides accurate on-surface evaluation (up to 9-th order) of any Laplace and Helmholtz layer potentials on a smooth surface parameterized over a rectangular domain. The layer potentials are discretized uniformly using the double trapezoidal rule, with local high-order corrections on a small stencil around the singular point.
 
